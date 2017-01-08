@@ -12,10 +12,9 @@ consumer_key = "4UNTDbgATbUbOc9U7fZ4Mm61q"
 consumer_secret = "jCBQ9xxuq1QugpzaDzb9eXpmIXEvITYzoS8aKN7g7UdbACPDPr"
 access_key = "2387288060-gwXvE7KUHH4PnXrQX5ystlm8XYRDrBJD8XMfWki"
 access_secret = "YrV6MiaTMG3mf2O4VTUxHF64MLZhJJcbXTcXXmUp6KzpN"
-username = "krzychu199110"
-
+#username = "krzychu199110"
 #method to get a user's last 1000 tweets
-def get_tweets():
+def get_tweets(username):
 
 	#http://tweepy.readthedocs.org/en/v3.1.0/getting_started.html#api
 	auth = tweepy.OAuthHandler(consumer_key, consumer_secret)

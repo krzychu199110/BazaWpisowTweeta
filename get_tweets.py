@@ -1,87 +1,54 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import sys
+import csv
+
+#http://www.tweepy.org/
 import tweepy
-import ConfigParser
-from datetime import datetime
-from babel.dates import format_timedelta
 
-# Load configuration file
-config = ConfigParser.ConfigParser()
-config.read("C:\Users\krzyc\OneDrive\BazaWpisowTweeta\BazaWpisowTweeta\get_tweets.conf")
+#Get your Twitter API credentials and enter them here
+consumer_key = "4UNTDbgATbUbOc9U7fZ4Mm61q"
+consumer_secret = "jCBQ9xxuq1QugpzaDzb9eXpmIXEvITYzoS8aKN7g7UdbACPDPr"
+access_key = "2387288060-gwXvE7KUHH4PnXrQX5ystlm8XYRDrBJD8XMfWki"
+access_secret = "YrV6MiaTMG3mf2O4VTUxHF64MLZhJJcbXTcXXmUp6KzpN"
+username = "krzychu199110"
 
-# Connect to Twitter
-def login():
-  consumer_key = config.get('twitter_login', 'consumer_key')
-  consumer_secret = config.get('twitter_login', 'consumer_secret')
-  access_token = config.get('twitter_login', 'access_token')
-  access_secret = config.get('twitter_login', 'access_secret')
+#method to get a user's last 1000 tweets
+def get_tweets():
 
-  auth = tweepy.auth.OAuthHandler(consumer_key, consumer_secret)
-  auth.set_access_token(access_token, access_secret)
-  return(auth)
+	#http://tweepy.readthedocs.org/en/v3.1.0/getting_started.html#api
+	auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+	auth.set_access_token(access_key, access_secret)
+	api = tweepy.API(auth)
 
-# Adapted from https://github.com/ryanmcgrath/twython/blob/173adee4a68b3a01292a3878e7fc33fa9622ee32/twython/api.py
-def htmlize_tweet(tweet, use_display_url=True, use_expanded_url=False):
-  if tweet.entities:
-    text = tweet.text
-    entities = tweet.entities
+	#set count to however many tweets you want; twitter only allows 200 at once
+	number_of_tweets = 1000
 
-    # Mentions
-    for entity in entities['user_mentions']:
-      start, end = entity['indices'][0], entity['indices'][1]
+	#get tweets
+	tweets = api.user_timeline(screen_name = username,count = number_of_tweets)
 
-      mention_html = '<a href="https://twitter.com/{screen_name}">@{screen_name}</a>'.format(screen_name = entity['screen_name'])
-      text = text.replace(tweet.text[start:end], mention_html)
+	#create array of tweet information: username, tweet id, date/time, text
+	tweets_for_csv = [[username,tweet.id_str, tweet.created_at, tweet.text.encode("utf-8")] for tweet in tweets]
 
-    # Hashtags
-    for entity in entities['hashtags']:
-      start, end = entity['indices'][0], entity['indices'][1]
+	#write to a new csv file from the array of tweets
+	print "writing to {0}_tweets.csv".format(username)
+	with open("{0}_tweets.csv".format(username) , 'w+') as file:
+		writer = csv.writer(file, delimiter='|')
+		writer.writerows(tweets_for_csv)
 
-      hashtag_html = '<a href="https://twitter.com/search?q=%23{hashtag}">#{hashtag}</a>'.format(hashtag = entity['text'])
-      text = text.replace(tweet.text[start:end], hashtag_html)
 
-    # Urls
-    for entity in entities['urls']:
-      start, end = entity['indices'][0], entity['indices'][1]
-      if use_display_url and entity.get('display_url'):
-        shown_url = entity['display_url'].encode('utf-8')
-      elif use_expanded_url and entity.get('expanded_url'):
-        shown_url = entity['expanded_url'].encode('utf-8')
-      else:
-        shown_url = entity['url'].encode('utf-8')
-      print(shown_url)
+#if we're running this as a script
+if __name__ == '__main__':
 
-      url_html = '<a href="{url}">{shown_url}</a>'.format(url=entity['url'], shown_url=shown_url).decode('utf-8')
-      text = text.replace(tweet.text[start:end], url_html)
+    #get tweets for username passed at command line
+    if len(sys.argv) == 2:
+        get_tweets(sys.argv[1])
+    else:
+        print "Error: enter one username"
 
-  return text
+    #alternative method: loop through multiple users
+	# users = ['user1','user2']
 
-# Log in to Twitter
-auth = login()
-api = tweepy.API(auth)
-
-# Format the output HTML
-html_out = '<ul>\n'
-
-for tweet in api.user_timeline(exclude_replies = True, include_rts = False, count = 1, include_entities=True):
-  timestamp = (format_timedelta(datetime.now() - tweet.created_at, locale='en_US'))
-  print(tweet.__dict__)
-  # print(type(htmlize_tweet(tweet)))
-  template = u'\t<li>{text} <a href="http://twitter.com/{twitter_name}/statuses/{tweet_id}/" class="twitter_timestamp">{timestamp} ago</a></li>'.format(text=htmlize_tweet(tweet), twitter_name=tweet.user.screen_name, tweet_id=tweet.id, timestamp=timestamp).encode('utf-8')
-  html_out += template + '\n'
-
-html_out += '</ul>'
-print(html_out)
-
-# Write tweet to a file
-# with open(config.get('options', 'destination_file'), 'w') as f:
-  # f.write(html_out)
-
-def application(environ, start_response):
-  status = '200 OK'
-  output = html_out
-
-  response_headers = [('Content-type', 'text/plain'),
-  ('Content-Length', str(len(output)))]
-  start_response(status, response_headers)
-
-  return [output]
+	# for user in users:
+	# 	get_tweets(user)
